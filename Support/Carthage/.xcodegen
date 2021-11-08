@@ -51,16 +51,16 @@
     "R2Navigator" : {
       "dependencies" : [
         {
-          "framework" : "..\/..\/Carthage\/Build\/DifferenceKit.xcframework"
+          "framework" : "DifferenceKit.framework"
         },
         {
-          "framework" : "..\/..\/Carthage\/Build\/Fuzi.xcframework"
+          "framework" : "Fuzi.framework"
         },
         {
-          "framework" : "..\/..\/Carthage\/Build\/Minizip.xcframework"
+          "framework" : "Minizip.framework"
         },
         {
-          "framework" : "..\/..\/Carthage\/Build\/SwiftSoup.xcframework"
+          "framework" : "SwiftSoup.framework"
         },
         {
           "target" : "R2Shared"
@@ -90,13 +90,13 @@
     "R2Shared" : {
       "dependencies" : [
         {
-          "framework" : "..\/..\/Carthage\/Build\/Fuzi.xcframework"
+          "framework" : "Fuzi.framework"
         },
         {
-          "framework" : "..\/..\/Carthage\/Build\/Minizip.xcframework"
+          "framework" : "Minizip.framework"
         },
         {
-          "framework" : "..\/..\/Carthage\/Build\/SwiftSoup.xcframework"
+          "framework" : "SwiftSoup.framework"
         },
         {
           "sdk" : "CoreServices.framework"
@@ -121,16 +121,16 @@
     "R2Streamer" : {
       "dependencies" : [
         {
-          "framework" : "..\/..\/Carthage\/Build\/CryptoSwift.xcframework"
+          "framework" : "CryptoSwift.framework"
         },
         {
-          "framework" : "..\/..\/Carthage\/Build\/Fuzi.xcframework"
+          "framework" : "Fuzi.framework"
         },
         {
-          "framework" : "..\/..\/Carthage\/Build\/GCDWebServer.xcframework"
+          "framework" : "GCDWebServer.framework"
         },
         {
-          "framework" : "..\/..\/Carthage\/Build\/Minizip.xcframework"
+          "framework" : "Minizip.framework"
         },
         {
           "target" : "R2Shared"
@@ -159,19 +159,19 @@
     "ReadiumLCP" : {
       "dependencies" : [
         {
-          "framework" : "..\/..\/Carthage\/Build\/CryptoSwift.xcframework"
+          "framework" : "CryptoSwift.framework"
         },
         {
-          "framework" : "..\/..\/Carthage\/Build\/Fuzi.xcframework"
+          "framework" : "Fuzi.framework"
         },
         {
-          "framework" : "..\/..\/Carthage\/Build\/Minizip.xcframework"
+          "framework" : "Minizip.framework"
         },
         {
-          "framework" : "..\/..\/Carthage\/Build\/SQLite.xcframework"
+          "framework" : "SQLite.framework"
         },
         {
-          "framework" : "..\/..\/Carthage\/Build\/ZIPFoundation.xcframework"
+          "framework" : "ZIPFoundation.framework"
         },
         {
           "target" : "R2Shared"
@@ -193,10 +193,10 @@
     "ReadiumOPDS" : {
       "dependencies" : [
         {
-          "framework" : "..\/..\/Carthage\/Build\/Fuzi.xcframework"
+          "framework" : "Fuzi.framework"
         },
         {
-          "framework" : "..\/..\/Carthage\/Build\/Minizip.xcframework"
+          "framework" : "Minizip.framework"
         },
         {
           "target" : "R2Shared"
@@ -7579,6 +7579,10 @@
 ../../Sources/Streamer
 ../../Sources/Streamer/Assets
 ../../Sources/Streamer/Assets/fonts
+../../Sources/Streamer/Assets/fonts/Literata-Bold.ttf
+../../Sources/Streamer/Assets/fonts/Literata-BoldItalic.ttf
+../../Sources/Streamer/Assets/fonts/Literata-Italic.ttf
+../../Sources/Streamer/Assets/fonts/Literata-Regular.ttf
 ../../Sources/Streamer/Assets/fonts/OpenDyslexic-Regular.otf
 ../../Sources/Streamer/Model
 ../../Sources/Streamer/Model/Container.swift

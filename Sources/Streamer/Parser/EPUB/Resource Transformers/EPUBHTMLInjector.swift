@@ -65,6 +65,13 @@ final class EPUBHTMLInjector {
                 content = content.insert(string: """
                     <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0;"/>
                     <style type="text/css">@font-face{font-family: "OpenDyslexic"; src:url("/fonts/OpenDyslexic-Regular.otf") format("opentype");}</style>
+
+                    <style type="text/css">
+                        @font-face{font-family: "Literata"; src: url("/fonts/Literata-Regular.ttf") format("opentype");}
+                        @font-face{font-family: "Literata"; src: url("/fonts/Literata-Italic.ttf") format("opentype"); font-weight: normal; font-style: italic;}
+                        @font-face{font-family: "Literata"; src: url("/fonts/Literata-Bold.ttf") format("opentype"); font-weight: bold; font-style: normal;}
+                        @font-face{font-family: "Literata"; src: url("/fonts/Literata-BoldItalic.ttf") format("opentype"); font-weight: bold; font-style: italic;}
+                    </style>
                 """, at: headStart)
             }
             
