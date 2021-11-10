@@ -72,6 +72,13 @@ final class EPUBHTMLInjector {
                         @font-face{font-family: "Literata"; src: url("/fonts/Literata-Bold.ttf") format("opentype"); font-weight: bold; font-style: normal;}
                         @font-face{font-family: "Literata"; src: url("/fonts/Literata-BoldItalic.ttf") format("opentype"); font-weight: bold; font-style: italic;}
                     </style>
+
+                    <style type="text/css">
+                        @font-face{font-family: "Atkinson Hyperlegible"; src: url("/fonts/AtkinsonHyperlegible-Regular.ttf") format("opentype");}
+                        @font-face{font-family: "Atkinson Hyperlegible"; src: url("/fonts/AtkinsonHyperlegible-Italic.ttf") format("opentype"); font-weight: normal; font-style: italic;}
+                        @font-face{font-family: "Atkinson Hyperlegible"; src: url("/fonts/AtkinsonHyperlegible-Bold.ttf") format("opentype"); font-weight: bold; font-style: normal;}
+                        @font-face{font-family: "Atkinson Hyperlegible"; src: url("/fonts/AtkinsonHyperlegible-BoldItalic.ttf") format("opentype"); font-weight: bold; font-style: italic;}
+                    </style>
                 """, at: headStart)
             }
             
