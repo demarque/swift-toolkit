@@ -44,8 +44,7 @@ public final class LCPAcquisition: Loggable {
         didComplete(with: .cancelled)
     }
     
-    var subscriptions: [Cancellable] = []
-    let progress = MutableObservableVariable<Progress>(.indefinite)
+    let progress = MutableObservable<Progress>(.indefinite)
 
     private(set) var isCancelled = false
     private var isCompleted = false
@@ -55,9 +54,7 @@ public final class LCPAcquisition: Loggable {
     
     init(onProgress: @escaping (Progress) -> Void, completion: @escaping (CancellableResult<Publication, LCPError>) -> Void) {
         self.completion = completion
-        
-        progress.subscribe(observer: onProgress)
-            .store(in: &subscriptions)
+        self.progress.observe(onProgress)
     }
     
     func didComplete(with result: CancellableResult<Publication, LCPError>) -> Void {

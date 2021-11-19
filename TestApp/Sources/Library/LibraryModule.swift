@@ -26,6 +26,9 @@ protocol LibraryModuleAPI {
     /// Can be used to present the library to the user.
     var rootViewController: UINavigationController { get }
     
+    /// Loads the sample publications if needed.
+    func preloadSamples()
+    
     /// Imports a new publication to the library, either from:
     /// - a local file URL
     /// - a remote URL which will be downloaded
@@ -64,6 +67,17 @@ final class LibraryModule: LibraryModuleAPI {
         library.libraryDelegate = delegate
         return library
     }()
+    
+    func preloadSamples() {
+        library.preloadSamples()
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { completion in
+                if case let .failure(error) = completion {
+                    self.delegate?.presentError(error, from: self.libraryViewController)
+                }
+            }) {}
+            .store(in: &subscriptions)
+    }
     
     func importPublication(from url: URL, sender: UIViewController) -> AnyPublisher<Book, LibraryError> {
         library.importPublication(from: url, sender: sender)

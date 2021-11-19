@@ -177,17 +177,14 @@ final class LicensesService: Loggable {
 
             acquisition.downloadTask = task
 
-            progress
-                .map { progress -> LCPAcquisition.Progress in
-                    switch progress {
-                    case .infinite:
-                        return .indefinite
-                    case .finite(let value):
-                        return .percent(value)
-                    }
+            progress.observe { progress in
+                switch progress {
+                case .infinite:
+                    acquisition.progress.value = .indefinite
+                case .finite(let value):
+                    acquisition.progress.value = .percent(value)
                 }
-                .assign(to: acquisition.progress)
-                .store(in: &acquisition.subscriptions)
+            }
 
         } catch {
             acquisition.didComplete(with: .failure(.wrap(error)))

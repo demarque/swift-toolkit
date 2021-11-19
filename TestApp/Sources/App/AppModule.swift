@@ -52,6 +52,8 @@ final class AppModule {
         
         // Set Readium 2's logging minimum level.
         R2EnableLog(withMinimumSeverityLevel: .debug)
+        
+        library.preloadSamples()
     }
     
     private(set) lazy var aboutViewController: UIViewController = {

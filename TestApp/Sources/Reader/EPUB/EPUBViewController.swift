@@ -95,7 +95,7 @@ class EPUBViewController: ReaderViewController {
         return Bookmark(bookId: bookId, locator: locator)
     }
     
-    override func presentUserSettings(_ button: UIBarButtonItem) {
+    @objc func presentUserSettings() {
         let popoverPresentationController = userSettingNavigationController.popoverPresentationController!
         
         popoverPresentationController.delegate = self
@@ -150,4 +150,12 @@ extension EPUBViewController: UserSettingsNavigationControllerDelegate {
         navigationController?.navigationBar.titleTextAttributes = [NSAttributedString.Key.foregroundColor: colors.textColor]
     }
     
+}
+
+extension EPUBViewController: UIPopoverPresentationControllerDelegate {
+    // Prevent the popOver to be presented fullscreen on iPhones.
+    func adaptivePresentationStyle(for controller: UIPresentationController, traitCollection: UITraitCollection) -> UIModalPresentationStyle
+    {
+        return .none
+    }
 }

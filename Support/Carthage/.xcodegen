@@ -7389,17 +7389,12 @@
 ../../Sources/Navigator/PDF/PDFDocumentView.swift
 ../../Sources/Navigator/PDF/PDFNavigatorViewController.swift
 ../../Sources/Navigator/PDF/PDFTapGestureController.swift
-../../Sources/Navigator/Presentation
-../../Sources/Navigator/Presentation/PresentableNavigator.swift
-../../Sources/Navigator/Presentation/Presentation.swift
-../../Sources/Navigator/Presentation/PresentationSettings.swift
 ../../Sources/Navigator/Resources
 ../../Sources/Navigator/Resources/en.lproj
 ../../Sources/Navigator/Resources/en.lproj/Localizable.strings
 ../../Sources/Navigator/SelectableNavigator.swift
 ../../Sources/Navigator/Toolkit
 ../../Sources/Navigator/Toolkit/CompletionList.swift
-../../Sources/Navigator/Toolkit/EdgeTapNavigation.swift
 ../../Sources/Navigator/Toolkit/Extensions
 ../../Sources/Navigator/Toolkit/Extensions/Bundle.swift
 ../../Sources/Navigator/Toolkit/Extensions/CGRect.swift
@@ -7568,7 +7563,6 @@
 ../../Sources/Shared/Toolkit/Media/AudioSession.swift
 ../../Sources/Shared/Toolkit/Media/NowPlayingInfo.swift
 ../../Sources/Shared/Toolkit/Observable.swift
-../../Sources/Shared/Toolkit/Observable+Combine.swift
 ../../Sources/Shared/Toolkit/PDF
 ../../Sources/Shared/Toolkit/PDF/CGPDF.swift
 ../../Sources/Shared/Toolkit/PDF/PDFDocument.swift
@@ -7585,10 +7579,6 @@
 ../../Sources/Streamer
 ../../Sources/Streamer/Assets
 ../../Sources/Streamer/Assets/fonts
-../../Sources/Streamer/Assets/fonts/AtkinsonHyperlegible-Bold.ttf
-../../Sources/Streamer/Assets/fonts/AtkinsonHyperlegible-BoldItalic.ttf
-../../Sources/Streamer/Assets/fonts/AtkinsonHyperlegible-Italic.ttf
-../../Sources/Streamer/Assets/fonts/AtkinsonHyperlegible-Regular.ttf
 ../../Sources/Streamer/Assets/fonts/Literata-Bold.ttf
 ../../Sources/Streamer/Assets/fonts/Literata-BoldItalic.ttf
 ../../Sources/Streamer/Assets/fonts/Literata-Italic.ttf
