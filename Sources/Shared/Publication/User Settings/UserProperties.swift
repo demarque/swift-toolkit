@@ -102,6 +102,26 @@ public class Switchable: UserProperty {
     
 }
 
+// START Aldiko
+
+public class StringProperty: UserProperty {
+
+    public var value: String?
+
+    init(value: String?, reference: String, name: String) {
+        self.value = value
+
+        super.init(reference, name)
+    }
+
+    public override func toString() -> String {
+        value ?? ""
+    }
+
+}
+
+// END Aldiko
+
 public class UserProperties {
     
     public var properties = [UserProperty]()
@@ -118,6 +138,10 @@ public class UserProperties {
     
     public func addSwitchable(onValue: String, offValue: String, on: Bool, reference: String, name: String) {
         properties.append(Switchable(onValue: onValue, offValue: offValue, on: on, reference: reference, name: name))
+    }
+
+    public func addString(value: String?, reference: String, name: String) {
+        properties.append(StringProperty(value: value, reference: reference, name: name))
     }
     
     public func getProperty(reference: String) -> UserProperty? {
