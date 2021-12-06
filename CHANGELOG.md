@@ -4,7 +4,20 @@ All notable changes to this project will be documented in this file. Take a look
 
 **Warning:** Features marked as *alpha* may change or be removed in a future release without notice. Use with caution.
 
-<!--## [Unreleased]-->
+## [Unreleased]
+
+### Added
+
+#### Shared
+
+* Get the sanitized `Locator` text ready for user display with `locator.text.sanitized()`.
+
+### Fixed
+
+#### Navigator
+
+* [#14](https://github.com/readium/swift-toolkit/issues/14) Backward compatibility (iOS 10+) of JavaScript files is now handled with Babel.
+
 
 ## 2.2.0
 

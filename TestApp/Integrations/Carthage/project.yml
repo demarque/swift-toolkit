@@ -15,13 +15,9 @@ targets:
   TestApp:
     type: application
     platform: iOS
-    deploymentTarget: "13.6"
+    deploymentTarget: "14.0"
     sources: 
       - path: Sources
-        excludes:
-          - Resources/Samples
-      - path: Sources/Resources/Samples
-        type: folder
     dependencies:
       - framework: Carthage/Build/CryptoSwift.xcframework
       - framework: Carthage/Build/DifferenceKit.xcframework
