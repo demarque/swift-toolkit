@@ -346,11 +346,16 @@ open class PDFNavigatorViewController: UIViewController, VisualNavigator, Presen
             return false
         }
 
-        return go(
+        let result = go(
             to: publication.readingOrder[index],
             pageNumber: pageNumber(for: locator),
             completion: completion
         )
+        if result {
+            delegate?.onJump(to: locator, self)
+        }
+
+        return result
     }
     
     public func go(to link: Link, animated: Bool, completion: @escaping () -> Void) -> Bool {

@@ -92,7 +92,11 @@ public protocol NavigatorDelegate: AnyObject {
     /// note yourself, using its `content`. `link.type` contains information about the
     /// format of `content` and `referrer`, such as `text/html`.
     func navigator(_ navigator: Navigator, shouldNavigateToNoteAt link: Link, content: String, referrer: String?) -> Bool
-    
+
+    /// Called when the navigator will interrupt the linear reading progression to jump to the given locator/link.
+    ///
+    /// This occurs for example when clicking on internal links or calling [go: to] programmatically.
+    func onJump(to locator: Locator, _ navigator: Navigator)
 }
 
 
@@ -106,6 +110,10 @@ public extension NavigatorDelegate {
     
     func navigator(_ navigator: Navigator, shouldNavigateToNoteAt link: Link, content: String, referrer: String?) -> Bool {
         return true
+    }
+
+    func onJump(to locator: Locator, _ navigator: Navigator) {
+
     }
 
 }

@@ -140,7 +140,12 @@ open class CBZNavigatorViewController: UIViewController, VisualNavigator, Loggab
         guard let index = publication.readingOrder.firstIndex(withHREF: locator.href) else {
             return false
         }
-        return goToResourceAtIndex(index, animated: animated, completion: completion)
+        let result = goToResourceAtIndex(index, animated: animated, completion: completion)
+        if result {
+            delegate?.onJump(to: locator, self)
+        }
+
+        return result
     }
     
     public func go(to link: Link, animated: Bool, completion: @escaping () -> Void) -> Bool {

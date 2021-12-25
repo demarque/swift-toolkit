@@ -530,10 +530,15 @@ open class EPUBNavigatorViewController: UIViewController, VisualNavigator, Selec
             return false
         }
         
-        return paginationView.goToIndex(spreadIndex, location: .locator(locator), animated: animated) {
+        let result = paginationView.goToIndex(spreadIndex, location: .locator(locator), animated: animated) {
             self.on(.jumped)
             completion()
         }
+        if result {
+            delegate?.onJump(to: locator, self)
+        }
+
+        return result
     }
     
     public func go(to link: Link, animated: Bool, completion: @escaping () -> Void) -> Bool {

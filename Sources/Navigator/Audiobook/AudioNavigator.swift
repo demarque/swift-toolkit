@@ -238,6 +238,8 @@ open class _AudioNavigator: _MediaNavigator, _AudioSessionUser, Loggable {
 
             play()
 
+            delegate?.onJump(to: locator, self)
+            
             return true
 
         } catch {
