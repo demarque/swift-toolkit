@@ -1,5 +1,5 @@
 # XCODEGEN VERSION
-2.24.0
+2.25.0
 
 # SPEC
 {
@@ -278,13 +278,13 @@
 ../../Sources/LCP/Services/DeviceService.swift
 ../../Sources/LCP/Services/LicensesRepository.swift
 ../../Sources/LCP/Services/LicensesService.swift
-../../Sources/LCP/Services/NetworkService.swift
 ../../Sources/LCP/Services/PassphrasesRepository.swift
 ../../Sources/LCP/Services/PassphrasesService.swift
 ../../Sources/LCP/Toolkit
 ../../Sources/LCP/Toolkit/Bundle.swift
 ../../Sources/LCP/Toolkit/DataCompression.swift
 ../../Sources/LCP/Toolkit/Deferred.swift
+../../Sources/LCP/Toolkit/HTTPClient.swift
 ../../Sources/LCP/Toolkit/R2LCPLocalizedString.swift
 ../../Sources/Navigator
 ../../Sources/Navigator/Audiobook
