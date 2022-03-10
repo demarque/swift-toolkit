@@ -543,11 +543,3 @@ extension ReaderViewController: UIPopoverPresentationControllerDelegate {
         return .none
     }
 }
-
-extension ReaderViewController: UIPopoverPresentationControllerDelegate {
-    // Prevent the popOver to be presented fullscreen on iPhones.
-    func adaptivePresentationStyle(for controller: UIPresentationController, traitCollection: UITraitCollection) -> UIModalPresentationStyle
-    {
-        return .none
-    }
-}
