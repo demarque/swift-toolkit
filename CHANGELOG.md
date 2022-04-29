@@ -6,6 +6,19 @@ All notable changes to this project will be documented in this file. Take a look
 
 ## [Unreleased]
 
+### Fixed
+
+#### Navigator
+
+* Fixed memory leaks in the EPUB and PDF navigators.
+
+#### Streamer
+
+* Fixed memory leak in the `PublicationServer`.
+
+
+## [2.3.0]
+
 ### Added
 
 #### Shared
@@ -17,12 +30,6 @@ All notable changes to this project will be documented in this file. Take a look
 * HTTP client:
     * A new `HTTPClient.download()` API to download HTTP resources to a temporary location.
     * `HTTPRequest` and `DefaultHTTPClient` take an optional `userAgent` property to customize the user agent. 
-
-#### Navigator
-
-* The new `NavigatorDelegate.navigator(_:didJumpTo:)` API is called every time the navigator jumps to an explicit location, which might break the linear reading progression.
-    * For example, it is called when clicking on internal links or programmatically calling `Navigator.go(to:)`, but not when turning pages.
-    * You can use this callback to implement a navigation history by differentiating between continuous and discontinuous moves.
 
 #### Navigator
 
@@ -427,4 +434,4 @@ progression. Now if no reading progression is set, the `effectiveReadingProgress
 
 
 [unreleased]: https://github.com/readium/swift-toolkit/compare/main...HEAD
-[2.2.1]: https://github.com/readium/swift-kotlin/compare/2.2.0...2.2.1
+[2.3.0]: https://github.com/readium/swift-toolkit/compare/2.2.0...2.3.0
