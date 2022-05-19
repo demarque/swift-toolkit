@@ -101,6 +101,18 @@ public final class MediatorCancellable: Cancellable {
     }
 }
 
+public extension Cancellable {
+    /// Convenience to mediate a cancellable in a call chain.
+    ///
+    /// ```
+    /// apiReturningACancellable()
+    ///     .mediate(by: mediator)
+    /// ```
+    func mediated(by mediator: MediatorCancellable) {
+        mediator.mediate(self)
+    }
+}
+
 /// A `Cancellable` proxying another wrapped `cancellable`.
 public class ProxyCancellable: Cancellable {
     
