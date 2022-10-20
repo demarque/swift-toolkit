@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install dependencies
         run: brew install xcodegen
       - name: Check Carthage project
@@ -42,7 +42,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install dependencies
         run: yarn --cwd "$scripts" install --frozen-lockfile
       - name: Lint JavaScript
@@ -63,7 +63,7 @@ jobs:
     environment: LCP
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install dependencies
         run: brew install xcodegen
       - name: Generate project
@@ -86,7 +86,7 @@ jobs:
     environment: LCP
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install dependencies
         run: brew install xcodegen
       - name: Generate project
@@ -105,7 +105,7 @@ jobs:
     environment: LCP
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install dependencies
         run: brew install xcodegen
       - name: Generate project
@@ -126,7 +126,7 @@ jobs:
     environment: LCP
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install dependencies
         run: brew install xcodegen
       - name: Generate project
