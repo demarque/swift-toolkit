@@ -150,6 +150,10 @@ class ReaderViewController: UIViewController, Loggable {
         var buttons: [UIBarButtonItem] = []
         // Table of Contents
         buttons.append(UIBarButtonItem(image: #imageLiteral(resourceName: "menuIcon"), style: .plain, target: self, action: #selector(presentOutline)))
+        // User settings
+        if navigator is PresentableNavigator {
+            buttons.append(UIBarButtonItem(image: #imageLiteral(resourceName: "settingsIcon"), style: .plain, target: self, action: #selector(presentUserSettings)))
+        }
         // DRM management
         if publication.isProtected {
             buttons.append(UIBarButtonItem(image: #imageLiteral(resourceName: "drm"), style: .plain, target: self, action: #selector(presentDRMManagement)))
@@ -234,6 +238,28 @@ class ReaderViewController: UIViewController, Loggable {
                 }
             } receiveValue: { _ in }
             .store(in: &subscriptions)
+    }
+    
+    // MARK: - User Settings
+    
+    
+    @objc func presentUserSettings(_ button: UIBarButtonItem) {
+        guard let navigator = navigator as? PresentableNavigator else {
+            return
+        }
+        
+        let vc = UIHostingController(rootView: SettingsView(settings: PresentationSettings(navigator: navigator)))
+        vc.modalPresentationStyle = .popover
+        let popoverPresentationController = vc.popoverPresentationController!
+        
+        popoverPresentationController.delegate = self
+        popoverPresentationController.barButtonItem = button
+
+        present(vc, animated: true) {
+            // Makes sure that the popover is dismissed also when tapping on one of the other UIBarButtonItems.
+            // ie. http://karmeye.com/2014/11/20/ios8-popovers-and-passthroughviews/
+            popoverPresentationController.passthroughViews = nil
+        }
     }
     
     // MARK: - Search
@@ -439,7 +465,6 @@ extension ReaderViewController: NavigatorDelegate {
     }
     
     func navigator(_ navigator: Navigator, shouldNavigateToNoteAt link: R2Shared.Link, content: String, referrer: String?) -> Bool {
-    
         var title = referrer
         if let t = title {
             title = try? clean(t, .none())
@@ -496,17 +521,8 @@ extension ReaderViewController: VisualNavigatorDelegate {
             decorator.apply(decorations: [], in: "search")
         }
         
-        let viewport = navigator.view.bounds
-        // Skips to previous/next pages if the tap is on the content edges.
-        let thresholdRange = 0...(0.2 * viewport.width)
-        var moved = false
-        if thresholdRange ~= point.x {
-            moved = navigator.goLeft(animated: false)
-        } else if thresholdRange ~= (viewport.maxX - point.x) {
-            moved = navigator.goRight(animated: false)
-        }
-        
-        if !moved {
+        let turnedPage = EdgeTapNavigation(navigator: navigator).didTap(at: point)
+        if !turnedPage {
             toggleNavigationBar()
         }
     }
@@ -550,6 +566,14 @@ extension ReaderViewController {
             .assertNoFailure()
             .sink {}
             .store(in: &subscriptions)
+    }
+}
+
+extension ReaderViewController: UIPopoverPresentationControllerDelegate {
+    // Prevent the popOver to be presented fullscreen on iPhones.
+    func adaptivePresentationStyle(for controller: UIPresentationController, traitCollection: UITraitCollection) -> UIModalPresentationStyle
+    {
+        return .none
     }
 }
 

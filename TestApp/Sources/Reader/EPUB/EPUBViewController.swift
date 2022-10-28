@@ -93,7 +93,7 @@ class EPUBViewController: ReaderViewController {
         return Bookmark(bookId: bookId, locator: locator)
     }
     
-    @objc func presentUserSettings() {
+    override func presentUserSettings(_ button: UIBarButtonItem) {
         let popoverPresentationController = userSettingNavigationController.popoverPresentationController!
         
         popoverPresentationController.delegate = self
