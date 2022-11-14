@@ -177,6 +177,12 @@ open class PDFNavigatorViewController: UIViewController, VisualNavigator, Presen
             })
         }
     }
+    
+    @available(iOS 13.0, *)
+    open override func buildMenu(with builder: UIMenuBuilder) {
+        editingActions.buildMenu(with: builder)
+        super.buildMenu(with: builder)
+    }
 
     /// Override to customize the PDFDocumentView.
     open func setupPDFView() {
