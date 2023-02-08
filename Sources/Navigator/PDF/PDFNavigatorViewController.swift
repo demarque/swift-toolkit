@@ -156,6 +156,12 @@ open class PDFNavigatorViewController: UIViewController, VisualNavigator, Presen
             }
         }
     }
+    
+    open override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        becomeFirstResponder()
+    }
 
     open override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         super.viewWillTransition(to: size, with: coordinator)
@@ -175,6 +181,40 @@ open class PDFNavigatorViewController: UIViewController, VisualNavigator, Presen
                     pdfView.scaleFactor = pdfView.minScaleFactor
                 }
             })
+        }
+    }
+    
+    open override var canBecomeFirstResponder: Bool { true }
+    
+    override open func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
+        var didHandleEvent = false
+        if (isFirstResponder) {
+            for press in presses {
+                if let event = KeyEvent(uiPress: press) {
+                    delegate?.navigator(self, didPressKey: event)
+                    didHandleEvent = true
+                }
+            }
+        }
+        
+        if !didHandleEvent {
+            super.pressesBegan(presses, with: event)
+        }
+    }
+    
+    override open func pressesEnded(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
+        var didHandleEvent = false
+        if (isFirstResponder) {
+            for press in presses {
+                if let event = KeyEvent(uiPress: press) {
+                    delegate?.navigator(self, didReleaseKey: event)
+                    didHandleEvent = true
+                }
+            }
+        }
+        
+        if !didHandleEvent {
+            super.pressesEnded(presses, with: event)
         }
     }
     
