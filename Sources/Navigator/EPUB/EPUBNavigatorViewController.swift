@@ -46,7 +46,10 @@ public extension EPUBNavigatorDelegate {
 
 public typealias EPUBContentInsets = (top: CGFloat, bottom: CGFloat)
 
-open class EPUBNavigatorViewController: UIViewController, VisualNavigator, SelectableNavigator, DecorableNavigator, Loggable {
+open class EPUBNavigatorViewController: UIViewController,
+    VisualNavigator, SelectableNavigator, DecorableNavigator,
+    Configurable, Loggable
+{
 
     public enum EPUBError: Error {
         /// The provided publication is restricted. Check that any DRM was
@@ -63,8 +66,11 @@ open class EPUBNavigatorViewController: UIViewController, VisualNavigator, Selec
     }
 
     public struct Configuration {
-        /// Default user settings.
-        public var userSettings: UserSettings
+        /// Initial set of setting preferences.
+        public var preferences: EPUBPreferences
+
+        /// Provides default fallback values and ranges for the user settings.
+        public var defaults: EPUBDefaults
 
         /// Editing actions which will be displayed in the default text selection menu.
         ///
@@ -74,6 +80,20 @@ open class EPUBNavigatorViewController: UIViewController, VisualNavigator, Selec
         /// Then, implement the selector in one of your classes in the responder chain. Typically, in the
         /// `UIViewController` wrapping the `EPUBNavigatorViewController`.
         public var editingActions: [EditingAction]
+        
+        /// Indicates whether the pages will be turned automatically when the
+        /// user taps the left/right viewport edges or presses the space and
+        /// arrow keys.
+        ///
+        /// Default is `true`.
+        ///
+        /// If you want to fine-tune this behavior:
+        ///   - Set this property to `false`.
+        ///   - Create your own instance of `DirectionalNavigationAdapter` with
+        ///     custom options.
+        ///   - Forward the `didTapAt` and `didPressKey` `VisualNavigatorDelegate`
+        ///     events to the adapter instance.
+        public var enablePageTurnInteractions: Bool
 
         /// Content insets used to add some vertical margins around reflowable EPUB publications.
         /// The insets can be configured for each size class to allow smaller margins on compact
@@ -89,12 +109,26 @@ open class EPUBNavigatorViewController: UIViewController, VisualNavigator, Selec
         /// Supported HTML decoration templates.
         public var decorationTemplates: [Decoration.Style.Id: HTMLDecorationTemplate]
 
+        /// Additional font families which will be available in the preferences.
+        public var fontFamilyDeclarations: [AnyHTMLFontFamilyDeclaration]
+
+        /// Readium CSS reading system settings.
+        ///
+        /// See https://readium.org/readium-css/docs/CSS19-api.html#reading-system-styles
+        public var readiumCSSRSProperties: CSSRSProperties
+
         /// Logs the state changes when true.
         public var debugState: Bool
 
+        /// Default user settings.
+        public var userSettings: UserSettings
+
         public init(
             userSettings: UserSettings = UserSettings(),
+            preferences: EPUBPreferences = .empty,
+            defaults: EPUBDefaults = EPUBDefaults(),
             editingActions: [EditingAction] = EditingAction.defaultActions,
+            enablePageTurnInteractions: Bool = true,
             contentInset: [UIUserInterfaceSizeClass: EPUBContentInsets] = [
                 .compact: (top: 20, bottom: 20),
                 .regular: (top: 44, bottom: 44)
@@ -102,14 +136,21 @@ open class EPUBNavigatorViewController: UIViewController, VisualNavigator, Selec
             preloadPreviousPositionCount: Int = 2,
             preloadNextPositionCount: Int = 6,
             decorationTemplates: [Decoration.Style.Id: HTMLDecorationTemplate] = HTMLDecorationTemplate.defaultTemplates(),
+            fontFamilyDeclarations: [AnyHTMLFontFamilyDeclaration] = [],
+            readiumCSSRSProperties: CSSRSProperties = CSSRSProperties(),
             debugState: Bool = false
         ) {
             self.userSettings = userSettings
+            self.preferences = preferences
+            self.defaults = defaults
             self.editingActions = editingActions
+            self.enablePageTurnInteractions = enablePageTurnInteractions
             self.contentInset = contentInset
             self.preloadPreviousPositionCount = preloadPreviousPositionCount
             self.preloadNextPositionCount = preloadNextPositionCount
             self.decorationTemplates = decorationTemplates
+            self.fontFamilyDeclarations = fontFamilyDeclarations
+            self.readiumCSSRSProperties = readiumCSSRSProperties
             self.debugState = debugState
         }
     }
@@ -117,11 +158,9 @@ open class EPUBNavigatorViewController: UIViewController, VisualNavigator, Selec
     public weak var delegate: EPUBNavigatorDelegate? {
         didSet { notifyCurrentLocation() }
     }
-    public var userSettings: UserSettings
 
-    public var readingProgression: ReadingProgression {
-        didSet { updateUserSettingStyle() }
-    }
+    @available(*, deprecated, message: "See the 2.5.0 migration guide to migrate the Settings API")
+    public var userSettings: UserSettings = UserSettings()
     
     /// Navigation state.
     private enum State: Equatable {
@@ -211,15 +250,13 @@ open class EPUBNavigatorViewController: UIViewController, VisualNavigator, Selec
         }
     }
 
-    let config: Configuration
-    private let publication: Publication
     private let initialLocation: Locator?
-    private let editingActions: EditingActionsController
 
-    private let server: HTTPServer?
-    private let publicationEndpoint: HTTPServerEndpoint?
-    private let publicationBaseURL: URL
-    private let assetsURL: URL
+    private let viewModel: EPUBNavigatorViewModel
+    private var publication: Publication { viewModel.publication }
+    private var directionalNavigationAdapter: DirectionalNavigationAdapter?
+
+    var config: Configuration { viewModel.config }
 
     public convenience init(
         publication: Publication,
@@ -231,40 +268,16 @@ open class EPUBNavigatorViewController: UIViewController, VisualNavigator, Selec
             throw EPUBError.publicationRestricted
         }
 
-        let publicationEndpoint: HTTPServerEndpoint?
-        let baseURL: URL
-        if let url = publication.baseURL {
-            publicationEndpoint = nil
-            baseURL = url
-        } else {
-            let endpoint = UUID().uuidString
-            publicationEndpoint = endpoint
-            baseURL = try httpServer.serve(at: endpoint, publication: publication)
-        }
-
-        // FIXME: Remove in Readium 3.0
-        // Serve the fonts under the /fonts endpoint as the Streamer's
-        // EPUBHTMLInjector is expecting it there.
-        try httpServer.serve(
-            at: "fonts",
-            contentsOf: Bundle.module.resourceURL!.appendingPathComponent("Assets/Static/fonts")
-        )
-
-        self.init(
+        let viewModel = try EPUBNavigatorViewModel(
             publication: publication,
-            initialLocation: initialLocation,
-            httpServer: httpServer,
-            publicationEndpoint: publicationEndpoint,
-            publicationBaseURL: baseURL,
-            assetsURL: try httpServer.serve(
-                at: "readium",
-                contentsOf: Bundle.module.resourceURL!.appendingPathComponent("Assets/Static")
-            ),
-            config: config
+            config: config,
+            httpServer: httpServer
         )
+
+        self.init(viewModel: viewModel, initialLocation: initialLocation)
     }
 
-    @available(*, deprecated, message: "See the 2.5.0 migration guide to migrate the HTTP server")
+    @available(*, deprecated, message: "See the 2.5.0 migration guide to migrate the HTTP server and settings API")
     public convenience init(
         publication: Publication,
         initialLocation: Locator? = nil,
@@ -272,66 +285,37 @@ open class EPUBNavigatorViewController: UIViewController, VisualNavigator, Selec
         config: Configuration = .init()
     ) {
         precondition(!publication.isRestricted, "The provided publication is restricted. Check that any DRM was properly unlocked using a Content Protection.")
-        guard let baseURL = publication.baseURL else {
-            preconditionFailure("No base URL provided for the publication. Add it to the HTTP server.")
-        }
         
         self.init(
-            publication: publication,
-            initialLocation: initialLocation,
-            httpServer: nil,
-            publicationEndpoint: nil,
-            publicationBaseURL: baseURL,
-            assetsURL: {
-                do {
-                    return try resourcesServer.serve(
-                        Bundle.module.resourceURL!.appendingPathComponent("Assets/Static"),
-                        at: "/r2-navigator/epub"
-                    )
-                } catch {
-                    EPUBNavigatorViewController.log(.error, error)
-                    return URL(string: "")!
-                }
-            }(),
-            config: config
+            viewModel: EPUBNavigatorViewModel(
+                publication: publication,
+                config: config,
+                resourcesServer: resourcesServer
+            ),
+            initialLocation: initialLocation
         )
+
+        self.userSettings = config.userSettings
     }
 
-    private init(
-        publication: Publication,
-        initialLocation: Locator?,
-        httpServer: HTTPServer?,
-        publicationEndpoint: HTTPServerEndpoint?,
-        publicationBaseURL: URL,
-        assetsURL: URL,
-        config: Configuration
-    ) {
-        self.publication = publication
-        self.server = httpServer
-        self.publicationEndpoint = publicationEndpoint
-        self.publicationBaseURL = URL(string: publicationBaseURL.absoluteString.addingSuffix("/"))!
-        self.assetsURL = assetsURL
+    private init(viewModel: EPUBNavigatorViewModel, initialLocation: Locator?) {
+        self.viewModel = viewModel
         self.initialLocation = initialLocation
-        self.editingActions = EditingActionsController(actions: config.editingActions, rights: publication.rights)
-        self.readingProgression = publication.metadata.effectiveReadingProgression
-        self.config = config
-        self.userSettings = config.userSettings
 
         super.init(nibName: nil, bundle: nil)
         
-        self.publication.userProperties.properties = userSettings.userProperties.properties
-        self.editingActions.delegate = self
+        self.directionalNavigationAdapter =
+            viewModel.config.enablePageTurnInteractions
+                ? DirectionalNavigationAdapter(navigator: self)
+                : nil
+
+        viewModel.delegate = self
+        viewModel.editingActions.delegate = self
     }
 
     @available(*, unavailable)
     public required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
-    }
-
-    deinit {
-        if let endpoint = publicationEndpoint {
-            server?.remove(at: endpoint)
-        }
     }
 
     open override func viewDidLoad() {
@@ -344,22 +328,23 @@ open class EPUBNavigatorViewController: UIViewController, VisualNavigator, Selec
         
         view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(didTapBackground)))
 
-        editingActions.updateSharedMenuController()
+        viewModel.editingActions.updateSharedMenuController()
 
-        reloadSpreads(at: initialLocation)
+        reloadSpreads(at: initialLocation, force: false)
+
+        applySettings()
     }
     
     @available(iOS 13.0, *)
     open override func buildMenu(with builder: UIMenuBuilder) {
-        editingActions.buildMenu(with: builder)
+        viewModel.editingActions.buildMenu(with: builder)
         super.buildMenu(with: builder)
     }
     
     /// Intercepts tap gesture when the web views are not loaded.
     @objc private func didTapBackground(_ gesture: UITapGestureRecognizer) {
         guard state == .loading else { return }
-        let point = gesture.location(in: view)
-        delegate?.navigator(self, didTapAt: point)
+        didTap(at: gesture.location(in: view))
     }
 
     open override func viewWillDisappear(_ animated: Bool) {
@@ -376,7 +361,7 @@ open class EPUBNavigatorViewController: UIViewController, VisualNavigator, Selec
         super.viewWillTransition(to: size, with: coordinator)
         
         coordinator.animate(alongsideTransition: nil) { [weak self] context in
-            self?.reloadSpreads()
+            self?.reloadSpreads(force: false)
         }
     }
     
@@ -393,7 +378,7 @@ open class EPUBNavigatorViewController: UIViewController, VisualNavigator, Selec
         if (isFirstResponder) {
             for press in presses {
                 if let event = KeyEvent(uiPress: press) {
-                    delegate?.navigator(self, didPressKey: event)
+                    didPressKey(event)
                     didHandleEvent = true
                 }
             }
@@ -469,7 +454,7 @@ open class EPUBNavigatorViewController: UIViewController, VisualNavigator, Selec
             return true
         }
         
-        let isRTL = (readingProgression == .rtl)
+        let isRTL = (viewModel.readingProgression == .rtl)
         let delta = isRTL ? -1 : 1
         let moved: Bool = {
             switch direction {
@@ -490,10 +475,12 @@ open class EPUBNavigatorViewController: UIViewController, VisualNavigator, Selec
     }
     
     
-    // MARK: - User settings
+    // MARK: - Legacy user settings
     
+    @available(*, deprecated, message: "See the 2.5.0 migration guide to migrate the Settings API")
     public func updateUserSettingStyle() {
-        assert(Thread.isMainThread, "User settings must be updated from the main thread")
+        precondition(viewModel.useLegacySettings, "updateUserSettingsStyle() is not available when using the new Settings API. See the 2.5.0 migration guide.")
+        precondition(Thread.isMainThread, "User settings must be updated from the main thread")
         _updateUserSettingsStyle()
     }
     
@@ -503,11 +490,11 @@ open class EPUBNavigatorViewController: UIViewController, VisualNavigator, Selec
     ) { [weak self] in
         guard let self = self else { return }
 
-        self.reloadSpreads()
+        self.reloadSpreads(force: false)
 
         let location = self.currentLocation
         for (_, view) in self.paginationView.loadedViews {
-            (view as? EPUBSpreadView)?.applyUserSettingsStyle()
+            (view as? EPUBSpreadView)?.applySettings()
         }
 
         // Re-positions the navigator to the location before applying the settings
@@ -572,9 +559,12 @@ open class EPUBNavigatorViewController: UIViewController, VisualNavigator, Selec
     private let reloadSpreadsCompletions = CompletionList()
     private var needsReloadSpreads = false
     
-    private func reloadSpreads(at locator: Locator? = nil, completion: (() -> Void)? = nil) {
+    private func reloadSpreads(at locator: Locator? = nil, force: Bool, completion: (() -> Void)? = nil) {
         assert(Thread.isMainThread, "reloadSpreads() must be called from the main thread")
-
+        
+        guard isViewLoaded else {
+            return
+        }
         guard !needsReloadSpreads else {
             if let completion = completion {
                 reloadSpreadsCompletions.add(completion)
@@ -587,19 +577,23 @@ open class EPUBNavigatorViewController: UIViewController, VisualNavigator, Selec
         DispatchQueue.main.async {
             self.needsReloadSpreads = false
             
-            self._reloadSpreads(at: locator) {
+            self._reloadSpreads(at: locator, force: force) {
                 self.reloadSpreadsCompletions.complete()
             }
         }
     }
     
-    private func _reloadSpreads(at locator: Locator? = nil, completion: @escaping () -> Void) {
+    private func _reloadSpreads(at locator: Locator? = nil, force: Bool, completion: @escaping () -> Void) {
         let isLandscape = (self.view.bounds.width > self.view.bounds.height)
-        let pageCountPerSpread = EPUBSpread.pageCountPerSpread(for: self.publication, userSettings: self.userSettings, isLandscape: isLandscape)
+        let pageCountPerSpread = EPUBSpread.pageCountPerSpread(
+            for: publication,
+            spread: viewModel.spread,
+            isLandscape: isLandscape
+        )
         
         guard
-            // Already loaded with the expected amount of spreads.
-            self.spreads.first?.pageCount != pageCountPerSpread,
+            // Already loaded with the expected amount of spreads?
+            force || self.spreads.first?.pageCount != pageCountPerSpread,
             self.on(.load)
         else {
             completion()
@@ -607,7 +601,7 @@ open class EPUBNavigatorViewController: UIViewController, VisualNavigator, Selec
         }
 
         let locator = locator ?? self.currentLocation
-        self.spreads = EPUBSpread.makeSpreads(for: self.publication, readingProgression: self.readingProgression, pageCountPerSpread: pageCountPerSpread)
+        self.spreads = EPUBSpread.makeSpreads(for: self.publication, readingProgression: viewModel.readingProgression, pageCountPerSpread: pageCountPerSpread)
         
         let initialIndex: Int = {
             if let href = locator?.href, let foundIndex = self.spreads.firstIndex(withHref: href) {
@@ -617,7 +611,12 @@ open class EPUBNavigatorViewController: UIViewController, VisualNavigator, Selec
             }
         }()
         
-        self.paginationView.reloadAtIndex(initialIndex, location: PageLocation(locator), pageCount: self.spreads.count, readingProgression: self.readingProgression) {
+        self.paginationView.reloadAtIndex(
+            initialIndex,
+            location: PageLocation(locator),
+            pageCount: spreads.count,
+            readingProgression: viewModel.readingProgression
+        ) {
             self.on(.loaded)
             completion()
         }
@@ -631,6 +630,25 @@ open class EPUBNavigatorViewController: UIViewController, VisualNavigator, Selec
 
     
     // MARK: - Navigator
+
+    public var presentation: VisualNavigatorPresentation {
+        VisualNavigatorPresentation(
+            readingProgression: settings.readingProgression,
+            scroll: settings.scroll,
+            axis: (settings.scroll && !settings.verticalText)
+                ? .vertical
+                : .horizontal
+        )
+    }
+    
+    @available(*, deprecated, message: "See the 2.5.0 migration guide to migrate the Settings API")
+    public var readingProgression: R2Shared.ReadingProgression {
+        get { viewModel.legacyReadingProgression }
+        set {
+            viewModel.legacyReadingProgression = newValue
+            updateUserSettingStyle()
+        }
+    }
     
     public var currentLocation: Locator? {
         // Returns any pending locator to prevent returning invalid locations while loading it.
@@ -720,10 +738,10 @@ open class EPUBNavigatorViewController: UIViewController, VisualNavigator, Selec
     
     public func goForward(animated: Bool, completion: @escaping () -> Void) -> Bool {
         let direction: EPUBSpreadView.Direction = {
-            switch readingProgression {
-            case .ltr, .ttb, .auto:
+            switch viewModel.readingProgression {
+            case .ltr:
                 return .right
-            case .rtl, .btt:
+            case .rtl:
                 return .left
             }
         }()
@@ -732,19 +750,21 @@ open class EPUBNavigatorViewController: UIViewController, VisualNavigator, Selec
     
     public func goBackward(animated: Bool, completion: @escaping () -> Void) -> Bool {
         let direction: EPUBSpreadView.Direction = {
-            switch readingProgression {
-            case .ltr, .ttb, .auto:
+            switch viewModel.readingProgression {
+            case .ltr:
                 return .left
-            case .rtl, .btt:
+            case .rtl:
                 return .right
             }
         }()
         return go(to: direction, animated: animated, completion: completion)
     }
 
-    // MARK: – SelectableNavigator
+    // MARK: - SelectableNavigator
 
-    public var currentSelection: Selection? { editingActions.selection }
+    public var currentSelection: Selection? { 
+        viewModel.editingActions.selection
+    }
 
     public func clearSelection() {
         for (_, pageView) in paginationView.loadedViews {
@@ -752,7 +772,7 @@ open class EPUBNavigatorViewController: UIViewController, VisualNavigator, Selec
         }
     }
 
-    // MARK: – DecorableNavigator
+    // MARK: - DecorableNavigator
 
     private var decorations: [String: [DiffableDecoration]] = [:]
 
@@ -802,7 +822,50 @@ open class EPUBNavigatorViewController: UIViewController, VisualNavigator, Selec
         }
     }
 
-    // MARK: – EPUB-specific extensions
+    // MARK: - Configurable
+
+    public var settings: EPUBSettings { viewModel.settings }
+
+    public func submitPreferences(_ preferences: EPUBPreferences) {
+        viewModel.submitPreferences(preferences)
+        applySettings()
+
+        delegate?.navigator(self, presentationDidChange: presentation)
+    }
+
+    public func editor(of preferences: EPUBPreferences) -> EPUBPreferencesEditor {
+        viewModel.editor(of: preferences)
+    }
+    
+    /// Applies user settings that require native configuration instead of
+    /// CSS properties.
+    private func applySettings() {
+        guard isViewLoaded, !viewModel.useLegacySettings else {
+            return
+        }
+
+        paginationView.backgroundColor = settings.effectiveBackgroundColor.uiColor
+    }
+    
+    // MARK: - User interactions
+    
+    private func didTap(at point: CGPoint) {
+        guard directionalNavigationAdapter?.didTap(at: point) != true else {
+            return
+        }
+        
+        delegate?.navigator(self, didTapAt: point)
+    }
+    
+    private func didPressKey(_ event: KeyEvent) {
+        guard directionalNavigationAdapter?.didPressKey(event: event) != true else {
+            return
+        }
+        
+        delegate?.navigator(self, didPressKey: event)
+    }
+
+    // MARK: - EPUB-specific extensions
 
     /// Evaluates the given JavaScript on the currently visible HTML resource.
     public func evaluateJavaScript(_ script: String, completion: ((Result<Any, Error>) -> Void)? = nil) {
@@ -813,6 +876,37 @@ open class EPUBNavigatorViewController: UIViewController, VisualNavigator, Selec
             return
         }
         spreadView.evaluateScript(script, completion: completion)
+    }
+}
+
+extension EPUBNavigatorViewController: EPUBNavigatorViewModelDelegate {
+
+    func epubNavigatorViewModelInvalidatePaginationView(_ viewModel: EPUBNavigatorViewModel) {
+        reloadSpreads(force: true)
+    }
+
+    func epubNavigatorViewModel(_ viewModel: EPUBNavigatorViewModel, runScript script: String, in scope: EPUBScriptScope) {
+        switch scope {
+        case .currentResource:
+            (paginationView.currentView as? EPUBSpreadView)?.evaluateScript(script)
+
+        case .loadedResources:
+            for (_, view) in self.paginationView.loadedViews {
+                (view as? EPUBSpreadView)?.evaluateScript(script)
+            }
+
+        case .resource(let href):
+            for (_, view) in self.paginationView.loadedViews {
+                guard
+                    let view = view as? EPUBSpreadView,
+                    view.spread.links.first(withHREF: href) != nil
+                else {
+                    continue
+                }
+                view.evaluateScript(script, inHREF: href)
+                return
+            }
+        }
     }
 }
 
@@ -859,8 +953,7 @@ extension EPUBNavigatorViewController: EPUBSpreadViewDelegate {
         // We allow taps in any state, because we should always be able to toggle the navigation bar,
         // even while a locator is pending.
         
-        let point = view.convert(point, from: spreadView)
-        delegate?.navigator(self, didTapAt: point)
+        didTap(at: view.convert(point, from: spreadView))
         // FIXME: Deprecated, to be removed at some point.
         delegate?.middleTapHandler()
         
@@ -879,7 +972,7 @@ extension EPUBNavigatorViewController: EPUBSpreadViewDelegate {
     }
     
     func spreadView(_ spreadView: EPUBSpreadView, didPressKey event: KeyEvent) {
-        delegate?.navigator(self, didPressKey: event)
+        didPressKey(event)
     }
     
     func spreadView(_ spreadView: EPUBSpreadView, didReleaseKey event: KeyEvent) {
@@ -941,7 +1034,7 @@ extension EPUBNavigatorViewController: EPUBSpreadViewDelegate {
                 withoutFragment = String(withoutFragment.dropFirst())
             }
             
-            let absolute = publicationBaseURL.appendingPathComponent(withoutFragment)
+            let absolute = viewModel.publicationBaseURL.appendingPathComponent(withoutFragment)
             
             log(.debug, "Fetching note contents from \(absolute.absoluteString)")
             let contents = try String(contentsOf: absolute)
@@ -980,10 +1073,10 @@ extension EPUBNavigatorViewController: EPUBSpreadViewDelegate {
             let locator = currentLocation,
             let text = text
         else {
-            editingActions.selection = nil
+            viewModel.editingActions.selection = nil
             return
         }
-        editingActions.selection = Selection(
+        viewModel.editingActions.selection = Selection(
             locator: locator.copy(text: { $0 = text }),
             frame: frame
         )
@@ -1024,16 +1117,10 @@ extension EPUBNavigatorViewController: PaginationViewDelegate {
         let spread = spreads[index]
         let spreadViewType = (spread.layout == .fixed) ? EPUBFixedSpreadView.self : EPUBReflowableSpreadView.self
         let spreadView = spreadViewType.init(
-            publication: publication,
+            viewModel: viewModel,
             spread: spread,
-            baseURL: publicationBaseURL,
-            resourcesURL: assetsURL,
-            readingProgression: readingProgression,
-            userSettings: userSettings,
             scripts: [],
-            animatedLoad: false,  // FIXME: custom animated
-            editingActions: editingActions,
-            contentInset: config.contentInset
+            animatedLoad: false
         )
         spreadView.delegate = self
 

@@ -196,8 +196,16 @@ open class CBZNavigatorViewController: UIViewController, VisualNavigator, Loggab
 
     // MARK: - Navigator
     
-    public var readingProgression: ReadingProgression {
-        publication.metadata.effectiveReadingProgression
+    public var presentation: VisualNavigatorPresentation {
+        VisualNavigatorPresentation(
+            readingProgression: ReadingProgression(publication.metadata.effectiveReadingProgression) ?? .ltr,
+            scroll: false,
+            axis: .horizontal
+        )
+    }
+    
+    public var readingProgression: R2Shared.ReadingProgression {
+        R2Shared.ReadingProgression(presentation.readingProgression)
     }
 
     public var currentLocation: Locator? {
