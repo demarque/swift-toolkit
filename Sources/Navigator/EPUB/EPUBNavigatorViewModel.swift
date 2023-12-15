@@ -138,7 +138,7 @@ final class EPUBNavigatorViewModel: Loggable {
         self.config = config
         editingActions = EditingActionsController(
             actions: config.editingActions,
-            rights: publication.rights
+            publication: publication
         )
         self.httpServer = httpServer
         self.publicationEndpoint = publicationEndpoint

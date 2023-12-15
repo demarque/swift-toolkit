@@ -166,9 +166,12 @@ open class EPUBNavigatorViewController: UIViewController,
 
         mutating func transition(_ event: Event) -> Bool {
             switch (self, event) {
+            // Loading the spreads is always possible, because it can be triggered by rotating the
+            // screen. In which case it cancels any on-going state.
+            case let (_, .load(locator)):
+                self = .loading(pendingLocator: locator)
+
             // All events are ignored when loading spreads, except for `loaded` and `load`.
-            case (.loading, .load):
-                return true
             case (.loading, .loaded):
                 self = .idle
             case (.loading, _):
@@ -192,11 +195,6 @@ open class EPUBNavigatorViewController: UIViewController,
             case (.moving, .jump),
                  (.moving, .move):
                 return false
-
-            // Loading the spreads is always possible, because it can be triggered by rotating the
-            // screen. In which case it cancels any on-going state.
-            case let (_, .load(locator)):
-                self = .loading(pendingLocator: locator)
 
             default:
                 log(.error, "Invalid event \(event) for state \(self)")
@@ -338,8 +336,6 @@ open class EPUBNavigatorViewController: UIViewController,
         view.addSubview(paginationView)
 
         view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(didTapBackground)))
-
-        viewModel.editingActions.updateSharedMenuController()
 
         reloadSpreads(at: initialLocation, force: false)
 
