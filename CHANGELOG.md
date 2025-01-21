@@ -6,6 +6,15 @@ All notable changes to this project will be documented in this file. Take a look
 
 ## [Unreleased]
 
+### Fixed
+
+#### LCP
+
+* Fixed a regression that caused some LCP passphrases to no longer match the protected publication.
+
+
+## [3.0.0-beta.2]
+
 * The Readium Swift toolkit now requires a minimum of iOS 13.4.
 
 ### Changed
